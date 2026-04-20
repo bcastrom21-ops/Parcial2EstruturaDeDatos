@@ -1,0 +1,297 @@
+package com.mycompany.parcial2grafos;
+
+import java.util.*;
+
+class Arista implements Comparable<Arista> {
+    int u, v, peso;
+
+    public Arista(int u, int v, int peso) {
+        this.u = u;
+        this.v = v;
+        this.peso = peso;
+    }
+
+    public int compareTo(Arista o) {
+        return this.peso - o.peso;
+    }
+
+    public String toString() {
+        return "(" + u + "-" + v + " : " + peso + ")";
+    }
+}
+
+public class MST_Prim_Kruskal {
+
+    static final int N = 6;
+    static int[][] grafo = new int[N][N];
+    static Random rand = new Random();
+    static int[] parent = new int[N];
+
+    public static void main(String[] args) {
+
+        generarGrafo();
+        imprimirMatriz();
+
+        // PUNTO 1
+        List<Arista> prim = primMST();
+        List<Arista> kruskal = kruskalMST();
+
+        imprimirAristas("PRIM", prim);
+        imprimirAristas("KRUSKAL", kruskal);
+
+        // PUNTO 2
+        primModificado();
+
+        // PUNTO 3
+        kruskalModificado();
+
+        // PUNTO 4
+        caminosCortos(0, 5, 50);
+
+        // PUNTO 5
+        dijkstraCompleto();
+
+        // PUNTO 6
+        floyd();
+
+        // PUNTO 7
+        warshall();
+
+        // PUNTO 8
+        redSocial();
+    }
+
+    // -------- GRAFO --------
+    static void generarGrafo() {
+        for (int i = 0; i < N; i++)
+            for (int j = i; j < N; j++)
+                if (i == j) grafo[i][j] = 0;
+                else {
+                    int peso = rand.nextInt(20) + 1;
+                    grafo[i][j] = grafo[j][i] = peso;
+                }
+    }
+
+    static void imprimirMatriz() {
+        System.out.println("\nMATRIZ:");
+        for (int[] f : grafo)
+            System.out.println(Arrays.toString(f));
+    }
+
+    // -------- PRIM --------
+    static List<Arista> primMST() {
+        boolean[] vis = new boolean[N];
+        List<Arista> mst = new ArrayList<>();
+        vis[0] = true;
+
+        for (int k = 0; k < N - 1; k++) {
+            int min = Integer.MAX_VALUE, u = -1, v = -1;
+
+            for (int i = 0; i < N; i++)
+                if (vis[i])
+                    for (int j = 0; j < N; j++)
+                        if (!vis[j] && grafo[i][j] < min) {
+                            min = grafo[i][j];
+                            u = i;
+                            v = j;
+                        }
+
+            vis[v] = true;
+            mst.add(new Arista(u, v, min));
+        }
+        return mst;
+    }
+
+    // -------- KRUSKAL --------
+    static int find(int i) {
+        if (parent[i] == i) return i;
+        return parent[i] = find(parent[i]);
+    }
+
+    static void union(int a, int b) {
+        parent[find(a)] = find(b);
+    }
+
+    static List<Arista> kruskalMST() {
+        List<Arista> aristas = new ArrayList<>();
+
+        for (int i = 0; i < N; i++) {
+            parent[i] = i;
+            for (int j = i + 1; j < N; j++)
+                aristas.add(new Arista(i, j, grafo[i][j]));
+        }
+
+        Collections.sort(aristas);
+
+        List<Arista> mst = new ArrayList<>();
+        for (Arista a : aristas)
+            if (find(a.u) != find(a.v)) {
+                union(a.u, a.v);
+                mst.add(a);
+            }
+
+        return mst;
+    }
+
+    static void imprimirAristas(String n, List<Arista> l) {
+        int total = 0;
+        System.out.println("\n" + n);
+        for (Arista a : l) {
+            System.out.println(a);
+            total += a.peso;
+        }
+        System.out.println("Costo: " + total);
+    }
+
+    // -------- PUNTO 2 --------
+    static void primModificado() {
+        boolean[] vis = new boolean[N];
+        int comparaciones = 0;
+        vis[0] = true;
+
+        for (int k = 0; k < N - 1; k++)
+            for (int i = 0; i < N; i++)
+                if (vis[i])
+                    for (int j = 0; j < N; j++) {
+                        comparaciones++;
+                        if (!vis[j] && grafo[i][j] > 0) {
+                        }
+                    }
+
+        System.out.println("\nComparaciones Prim: " + comparaciones);
+    }
+
+    // -------- PUNTO 3 --------
+    static void kruskalModificado() {
+        int ciclos = 0;
+        for (int i = 0; i < N; i++) parent[i] = i;
+
+        for (int i = 0; i < N; i++)
+            for (int j = i + 1; j < N; j++)
+                if (find(i) == find(j)) ciclos++;
+                else union(i, j);
+
+        System.out.println("Ciclos detectados: " + ciclos);
+    }
+
+    // -------- PUNTO 4 --------
+    static void caminosCortos(int o, int d, int X) {
+        int[] dist = dijkstra(o);
+
+        System.out.println("\nDistancia mínima: " + dist[d]);
+
+        if (dist[d] < X)
+            System.out.println("Menor que X");
+        else
+            System.out.println("No cumple condición");
+    }
+
+    // -------- PUNTO 5 --------
+    static void dijkstraCompleto() {
+
+        int[][] matriz = new int[N][N];
+
+        for (int i = 0; i < N; i++)
+            matriz[i] = dijkstra(i);
+
+        System.out.println("\nDIJKSTRA:");
+        for (int[] f : matriz)
+            System.out.println(Arrays.toString(f));
+
+        int mejor = -1, min = Integer.MAX_VALUE;
+
+        for (int i = 0; i < N; i++) {
+            int suma = 0;
+            for (int j = 0; j < N; j++)
+                suma += matriz[i][j];
+
+            if (suma < min) {
+                min = suma;
+                mejor = i;
+            }
+        }
+
+        System.out.println("Nodo central: " + mejor);
+    }
+
+    static int[] dijkstra(int origen) {
+        int[] dist = new int[N];
+        boolean[] vis = new boolean[N];
+
+        Arrays.fill(dist, Integer.MAX_VALUE);
+        dist[origen] = 0;
+
+        for (int i = 0; i < N; i++) {
+            int u = -1, min = Integer.MAX_VALUE;
+
+            for (int j = 0; j < N; j++)
+                if (!vis[j] && dist[j] < min) {
+                    min = dist[j];
+                    u = j;
+                }
+
+            vis[u] = true;
+
+            for (int v = 0; v < N; v++)
+                if (grafo[u][v] > 0 && dist[u] + grafo[u][v] < dist[v])
+                    dist[v] = dist[u] + grafo[u][v];
+        }
+
+        return dist;
+    }
+
+    // -------- PUNTO 6 --------
+    static void floyd() {
+        int[][] dist = new int[N][N];
+
+        for (int i = 0; i < N; i++)
+            dist[i] = Arrays.copyOf(grafo[i], N);
+
+        for (int k = 0; k < N; k++)
+            for (int i = 0; i < N; i++)
+                for (int j = 0; j < N; j++)
+                    if (dist[i][k] + dist[k][j] < dist[i][j])
+                        dist[i][j] = dist[i][k] + dist[k][j];
+
+        System.out.println("\nFLOYD:");
+        for (int[] f : dist)
+            System.out.println(Arrays.toString(f));
+    }
+
+    // -------- PUNTO 7 --------
+    static void warshall() {
+        boolean[][] reach = new boolean[N][N];
+
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                reach[i][j] = grafo[i][j] > 0;
+
+        for (int k = 0; k < N; k++)
+            for (int i = 0; i < N; i++)
+                for (int j = 0; j < N; j++)
+                    reach[i][j] |= (reach[i][k] && reach[k][j]);
+
+        System.out.println("\nWARSHALL:");
+        for (boolean[] f : reach)
+            System.out.println(Arrays.toString(f));
+    }
+
+    static void redSocial() {
+        int usuario = 0;
+        int mejor = -1, max = -1;
+
+        for (int i = 0; i < N; i++) {
+            int amigos = 0;
+            for (int j = 0; j < N; j++)
+                if (grafo[i][j] > 0)
+                    amigos++;
+
+            if (amigos > max) {
+                max = amigos;
+                mejor = i;
+            }
+        }
+
+        System.out.println("\nUsuario recomendado: " + mejor);
+    }
+}
